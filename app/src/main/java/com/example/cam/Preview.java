@@ -58,7 +58,7 @@ class Preview extends ViewGroup implements SurfaceHolder.Callback {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         // We purposely disregard child measurements because act as a
-        // wrapper to a SurfaceView that centers the camera preview instead
+        // wrapper to a SurfaceView that centers the mCamera preview instead
         // of stretching it.
         final int width = resolveSize(getSuggestedMinimumWidth(), widthMeasureSpec);
         final int height = resolveSize(getSuggestedMinimumHeight(), heightMeasureSpec);
@@ -99,7 +99,7 @@ class Preview extends ViewGroup implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        // The Surface has been created, acquire the camera and tell it where
+        // The Surface has been created, acquire the mCamera and tell it where
         // to draw.
         try {
             if (mCamera != null) {
