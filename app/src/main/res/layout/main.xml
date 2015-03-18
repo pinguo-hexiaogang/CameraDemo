@@ -1,20 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent">
 
     <SurfaceView
         android:id="@+id/surfaceView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Button
-        android:id="@+id/btnCapture"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/control_layout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:background="@drawable/round_button"
-        android:text="@string/btn_capture" /-->
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical">
 
-</FrameLayout>
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="@dimen/btn_cam_margin_bottom">
+
+            <ImageView
+                android:id="@+id/imv_thumb"
+                android:layout_width="@dimen/thub_imv_width_height"
+                android:layout_height="@dimen/thub_imv_width_height"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="20dip"
+                android:scaleType="centerCrop"
+                android:src="@drawable/btn_cam" />
+
+            <Button
+                android:id="@+id/btn_capture"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:background="@drawable/btn_cam_selector" />
+
+        </RelativeLayout>
+
+    </LinearLayout>
+</RelativeLayout>
