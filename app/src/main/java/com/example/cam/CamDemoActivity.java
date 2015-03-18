@@ -75,7 +75,6 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
                 //mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
             }
         });
-
         setBtnCam();
     }
 
