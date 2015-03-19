@@ -19,6 +19,7 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -117,8 +118,10 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
                 if (Camera.Parameters.FOCUS_MODE_AUTO.equals(mCamera.getParameters().getFocusMode())) {
                     mCamera.autoFocus(new Camera.AutoFocusCallback() {
                         @Override
-                        public void onAutoFocus(boolean arg0, Camera arg1) {
-                            mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
+                        public void onAutoFocus(boolean success, Camera arg1) {
+                            if(success) {
+                                mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
+                            }
                         }
                     });
                 } else {
@@ -147,8 +150,8 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
         if (numCams > 0) {
             try {
                 mCamera = Camera.open(0);
-                mCamera.startPreview();
                 setCameraParam(mCamera);
+                mCamera.startPreview();
             } catch (RuntimeException ex) {
                 Toast.makeText(this, getString(R.string.camera_not_found), Toast.LENGTH_LONG).show();
             }
@@ -274,11 +277,15 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
 
     public void setCameraParam(Camera camera) {
         if (camera != null) {
+            //camera.setDisplayOrientation(90);
+            setCameraDisplayOrientation(this,0,camera);
+            List<Camera.Size> pictureSize = camera.getParameters().getSupportedPictureSizes();
             List<Camera.Size> previewSizes = camera.getParameters().getSupportedPreviewSizes();
             if (previewSizes != null) {
                 DisplayMetrics metrics = new DisplayMetrics();
                 getWindowManager().getDefaultDisplay().getMetrics(metrics);
                 mPreviewSize = getOptimalPreviewSize(previewSizes, metrics.widthPixels, metrics.heightPixels);
+                //mPreviewSize = getOptimalPreviewSize(previewSizes, 700, 600);
             }
 
             // get Camera parameters
@@ -292,6 +299,38 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
                 camera.setParameters(params);
             }
         }
+    }
+    private void setCameraDisplayOrientation(Activity activity,
+            int cameraId, Camera camera) {
+        Camera.CameraInfo info =
+                new Camera.CameraInfo();
+        Camera.getCameraInfo(cameraId, info);
+        int rotation = activity.getWindowManager().getDefaultDisplay()
+                .getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (info.orientation - degrees + 360) % 360;
+        }
+        camera.setDisplayOrientation(result);
     }
 
     private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
