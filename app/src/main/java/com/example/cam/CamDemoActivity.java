@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import android.app.Activity;
@@ -16,9 +17,11 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -26,8 +29,12 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
@@ -37,6 +44,7 @@ import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 public class CamDemoActivity extends Activity implements SurfaceHolder.Callback {
     public static final String IMAGE_PATH_EXTRA_KEY = "image_path";
     private static final String TAG = "CamTestActivity";
+    private static final int SEEK_BAR_SHOW_TIME = 2000;
     private Button mBtnCam;
     private Camera mCamera;
     private SurfaceHolder mHolder = null;
@@ -44,6 +52,11 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
     private Camera.Size mPreviewSize = null;
     private String mImagePath = null;
     private ImageView mThumbImv = null;
+    private Spinner mPicSizeSpinner = null;
+    private List<Camera.Size> mPicSizeList = null;
+    private SeekBar mSeekBar = null;
+    private Handler mHandler;
+    private boolean mIsSupportZoom = false;
 
 
     @Override
@@ -51,14 +64,17 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
         super.onCreate(savedInstanceState);
         initPath();
         initImageLoader();
-
         setContentView(R.layout.main);
+        mHandler = new Handler();
         mSurfaceView = (SurfaceView) findViewById(R.id.surfaceView);
         mSurfaceView.setKeepScreenOn(true);
         mHolder = mSurfaceView.getHolder();
         mHolder.addCallback(this);
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         mThumbImv = (ImageView) findViewById(R.id.imv_thumb);
+        mPicSizeSpinner = (Spinner) findViewById(R.id.spinner);
+        mSeekBar = (SeekBar)findViewById(R.id.seekBar);
+        setUpSeekBar();
         setThumbImv();
         mThumbImv.setOnClickListener(new OnClickListener() {
             @Override
@@ -73,10 +89,44 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
 
             @Override
             public void onClick(View arg0) {
-                //mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
+                if(mIsSupportZoom){
+                    mSeekBar.setVisibility(View.VISIBLE);
+                }
+                mHandler.removeCallbacks(mHideSeekBarRunnable);
+                mHandler.postDelayed(mHideSeekBarRunnable,SEEK_BAR_SHOW_TIME);
             }
         });
         setBtnCam();
+    }
+    private Runnable mHideSeekBarRunnable = new Runnable() {
+        @Override
+        public void run() {
+            mSeekBar.setVisibility(View.GONE);
+        }
+    };
+
+    private void setUpSeekBar(){
+        mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if(mCamera != null) {
+                    Camera.Parameters param = mCamera.getParameters();
+                    param.setZoom(progress);
+                    mCamera.setParameters(param);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                mHandler.postDelayed(mHideSeekBarRunnable,SEEK_BAR_SHOW_TIME);
+            }
+        });
+        mHandler.postDelayed(mHideSeekBarRunnable,SEEK_BAR_SHOW_TIME);
     }
 
     private void setThumbImv() {
@@ -119,15 +169,15 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
                     mCamera.autoFocus(new Camera.AutoFocusCallback() {
                         @Override
                         public void onAutoFocus(boolean success, Camera arg1) {
-                            if(success) {
+                            if (success) {
                                 mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
                             }
                         }
                     });
+                    return true;
                 } else {
-                    mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
+                    return false;
                 }
-                return true;
             }
         });
     }
@@ -153,6 +203,7 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
                 setCameraParam(mCamera);
                 mCamera.startPreview();
             } catch (RuntimeException ex) {
+                ex.printStackTrace();
                 Toast.makeText(this, getString(R.string.camera_not_found), Toast.LENGTH_LONG).show();
             }
         }
@@ -278,9 +329,11 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
     public void setCameraParam(Camera camera) {
         if (camera != null) {
             //camera.setDisplayOrientation(90);
-            setCameraDisplayOrientation(this,0,camera);
+            setCameraDisplayOrientation(this, 0, camera);
+
             List<Camera.Size> pictureSize = camera.getParameters().getSupportedPictureSizes();
             List<Camera.Size> previewSizes = camera.getParameters().getSupportedPreviewSizes();
+            mPicSizeList = pictureSize;
             if (previewSizes != null) {
                 DisplayMetrics metrics = new DisplayMetrics();
                 getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -290,6 +343,7 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
 
             // get Camera parameters
             Camera.Parameters params = camera.getParameters();
+            updateZoom();
 
             List<String> focusModes = params.getSupportedFocusModes();
             if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
@@ -298,10 +352,50 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
                 // set Camera parameters
                 camera.setParameters(params);
             }
+            updatePicSizeSpinner();
         }
     }
+
+    private void updateZoom() {
+        Camera.Parameters params = mCamera.getParameters();
+        mIsSupportZoom = params.isZoomSupported();
+        if(params.isZoomSupported()){
+            mSeekBar.setMax(params.getMaxZoom());
+        }else{
+            mSeekBar.setVisibility(View.GONE);
+        }
+        mCamera.setParameters(params);
+    }
+
+    private void updatePicSizeSpinner() {
+        Collections.reverse(mPicSizeList);
+        String[] sizeStrArray = new String[mPicSizeList.size()];
+        for (int i = 0; i < mPicSizeList.size(); i++) {
+            Camera.Size size = mPicSizeList.get(i);
+            String s = size.width + "*" + size.height;
+            sizeStrArray[i] = s;
+        }
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sizeStrArray);
+        mPicSizeSpinner.setAdapter(arrayAdapter);
+        mPicSizeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Camera.Parameters param = mCamera.getParameters();
+                Camera.Size selectedSize = mPicSizeList.get(position);
+                param.setPictureSize(selectedSize.width, selectedSize.height);
+                mCamera.setParameters(param);
+                updateZoom();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+    }
+
     private void setCameraDisplayOrientation(Activity activity,
-            int cameraId, Camera camera) {
+                                             int cameraId, Camera camera) {
         Camera.CameraInfo info =
                 new Camera.CameraInfo();
         Camera.getCameraInfo(cameraId, info);
@@ -364,6 +458,30 @@ public class CamDemoActivity extends Activity implements SurfaceHolder.Callback 
             }
         }
         return optimalSize;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if(mIsSupportZoom) {
+            Camera.Parameters parameters = mCamera.getParameters();
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_VOLUME_UP:
+                    int zoom = parameters.getZoom() + 1;
+                    if(zoom <= parameters.getMaxZoom()){
+                        parameters.setZoom(zoom);
+                        mCamera.setParameters(parameters);
+                    }
+                    return true;
+                case KeyEvent.KEYCODE_VOLUME_DOWN:
+                    int zoomDown = parameters.getZoom() - 1;
+                    if(zoomDown >= 0){
+                        parameters.setZoom(zoomDown);
+                        mCamera.setParameters(parameters);
+                    }
+                    return true;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }
 
