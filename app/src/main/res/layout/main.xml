@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/layout"
+    android:background="@android:color/background_dark"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <SurfaceView
+    <com.example.cam.camera.CameraSurfaceView
         android:id="@+id/surfaceView"
+        android:layout_centerInParent="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

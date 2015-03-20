@@ -1,30 +1,25 @@
-package com.example.cam;
+package com.example.cam.ui;
 
-import android.app.Activity;
-import android.app.Fragment;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
 
-import java.util.ArrayList;
+import com.example.cam.R;
 
 
-public class PagerImageAc extends FragmentActivity{
+public class GridImageAc extends FragmentActivity{
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_pager_image);
+        setContentView(R.layout.activity_grid_image);
+        String imagesPath = getIntent().getStringExtra(CamDemoActivity.IMAGE_PATH_EXTRA_KEY);
         if (savedInstanceState == null) {
-            PagerImageFragment fragment = new PagerImageFragment();
+            GridImageFragment fragment = new GridImageFragment();
             fragment.setArguments(getIntent().getExtras());
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, fragment)
+                    .add(R.id.container,fragment)
                     .commit();
         }
     }
@@ -33,7 +28,7 @@ public class PagerImageAc extends FragmentActivity{
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_pager_image, menu);
+        getMenuInflater().inflate(R.menu.menu_grid_image, menu);
         return true;
     }
 

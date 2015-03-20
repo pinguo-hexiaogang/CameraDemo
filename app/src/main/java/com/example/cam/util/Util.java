@@ -1,4 +1,4 @@
-package com.example.cam;
+package com.example.cam.util;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -7,31 +7,42 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.File;
 
-/**
- * Created by ws-zhangxiaoming on 15-3-18.
- */
 public class Util {
-//    public static Bitmap getThumbByPath(Context ctx,String path){
-//        ContentResolver resolver = ctx.getContentResolver();
-//        if(!TextUtils.isEmpty(path) && (new File(path).exists())) {
-//            String[] projection = {MediaStore.Images.Thumbnails.}
-//            Cursor cursor = MediaStore.Images.Thumbnails.queryMiniThumbnails(resolver, MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, MediaStore.Images.Thumbnails.MICRO_KIND, null);
-//            if(cursor != null){
-//                do {
-//                    cursor.moveToLast();
-//                    long imageId = cursor.getLong(cursor.getColumnIndex(MediaStore.Images.Thumbnails.IMAGE_ID));
-//                    Bitmap bitmap = MediaStore.Images.Thumbnails.getThumbnail(resolver, imageId, MediaStore.Images.Thumbnails.MICRO_KIND, null);
-//                    return bitmap;
-//                }while(cursor.moveToPrevious());
-//            }
-//        }
-//        return null;
-//    }
+
+    private static final String TAG = "CameraDemo";
+    private static boolean sIsLogAble = true;
+    private Util(){}
+
+    public static void logE(String msg){
+        if(sIsLogAble){
+            Log.e(TAG,msg);
+        }
+    }
+    public static void logD(String msg){
+        if(sIsLogAble){
+            Log.d(TAG,msg);
+        }
+    }
+
+    public static String getPicDirPath(){
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            File sdCard = Environment.getExternalStorageDirectory();
+            File dir = new File(sdCard.getAbsolutePath() + "/CameDemo");
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            return dir.getAbsolutePath();
+        }else{
+            return null;
+        }
+    }
 
     public static Bitmap getImageThumbnail(String imagePath, int width, int height) {
         Bitmap bitmap = null;
