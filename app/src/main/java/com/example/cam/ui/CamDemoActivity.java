@@ -25,12 +25,13 @@ import android.widget.Spinner;
 import com.example.cam.R;
 import com.example.cam.camera.CameraManager;
 import com.example.cam.camera.CameraSurfaceView;
+import com.example.cam.listener.CameraOrientationListener;
 import com.example.cam.util.Util;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
-public class CamDemoActivity extends Activity{
+public class CamDemoActivity extends Activity {
     public static final String IMAGE_PATH_EXTRA_KEY = "image_path";
     private static final String TAG = "CamTestActivity";
     private static final int SEEK_BAR_SHOW_TIME = 2000;
@@ -43,6 +44,8 @@ public class CamDemoActivity extends Activity{
     private Spinner mPicSizeSpinner = null;
     private SeekBar mSeekBar = null;
     private Handler mHandler;
+    private CameraOrientationListener mOrientationListener = null;
+    private boolean mHasUpdatePicSizeList = false;
 
 
     @Override
@@ -50,11 +53,12 @@ public class CamDemoActivity extends Activity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         initPath();
-        initImageLoader();
+        mOrientationListener = new CameraOrientationListener(this);
         mCameraManager = CameraManager.getInstance();
+        mCameraManager.setOrientationListener(mOrientationListener);
         mCameraManager.setContext(this);
         mHandler = new Handler();
-        mSurfaceView = (CameraSurfaceView)findViewById(R.id.surfaceView);
+        mSurfaceView = (CameraSurfaceView) findViewById(R.id.surfaceView);
         mCameraManager.setSurfaceView(mSurfaceView);
         initViews();
     }
@@ -62,7 +66,7 @@ public class CamDemoActivity extends Activity{
     private void initViews() {
         mThumbImv = (ImageView) findViewById(R.id.imv_thumb);
         mPicSizeSpinner = (Spinner) findViewById(R.id.spinner);
-        mSeekBar = (SeekBar)findViewById(R.id.seekBar);
+        mSeekBar = (SeekBar) findViewById(R.id.seekBar);
         setUpSeekBar();
         setThumbImv();
         mThumbImv.setOnClickListener(new OnClickListener() {
@@ -78,11 +82,11 @@ public class CamDemoActivity extends Activity{
 
             @Override
             public void onClick(View arg0) {
-                if(mCameraManager.isZoomSupport()){
+                if (mCameraManager.isZoomSupport()) {
                     mSeekBar.setVisibility(View.VISIBLE);
                 }
                 mHandler.removeCallbacks(mHideSeekBarRunnable);
-                mHandler.postDelayed(mHideSeekBarRunnable,SEEK_BAR_SHOW_TIME);
+                mHandler.postDelayed(mHideSeekBarRunnable, SEEK_BAR_SHOW_TIME);
             }
         });
         setBtnCam();
@@ -95,7 +99,7 @@ public class CamDemoActivity extends Activity{
         }
     };
 
-    private void setUpSeekBar(){
+    private void setUpSeekBar() {
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -109,10 +113,10 @@ public class CamDemoActivity extends Activity{
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                mHandler.postDelayed(mHideSeekBarRunnable,SEEK_BAR_SHOW_TIME);
+                mHandler.postDelayed(mHideSeekBarRunnable, SEEK_BAR_SHOW_TIME);
             }
         });
-        mHandler.postDelayed(mHideSeekBarRunnable,SEEK_BAR_SHOW_TIME);
+        mHandler.postDelayed(mHideSeekBarRunnable, SEEK_BAR_SHOW_TIME);
     }
 
     private void setThumbImv() {
@@ -124,26 +128,17 @@ public class CamDemoActivity extends Activity{
             File lastImageFile = imagesArray[imagesArray.length - 1];
             ImageLoader.getInstance().displayImage("file://" + lastImageFile.getAbsolutePath(), mThumbImv);
         }
-        mCameraManager.setSaveImgDoneListener(new CameraManager.OnSaveImgDoneListener(){
+        mCameraManager.setSaveImgDoneListener(new CameraManager.OnSaveImgDoneListener() {
             @Override
             public void onDone(String imgPath) {
+                refreshGallery(new File(imgPath));
                 ImageLoader.getInstance().displayImage("file://" + imgPath, mThumbImv);
+                mBtnCam.setEnabled(true);
             }
         });
     }
 
-    private void initImageLoader() {
 
-        DisplayImageOptions options = new DisplayImageOptions.Builder()
-                .cacheInMemory(true)
-                .cacheOnDisk(true)
-                .considerExifParams(true)
-                .bitmapConfig(Bitmap.Config.RGB_565)
-                .build();
-        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(this.getApplication()).defaultDisplayImageOptions(options).build();
-
-        ImageLoader.getInstance().init(config);
-    }
 
     private void setBtnCam() {
         mBtnCam = (Button) findViewById(R.id.btn_capture);
@@ -151,6 +146,7 @@ public class CamDemoActivity extends Activity{
         mBtnCam.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
                 mCameraManager.takePicture();
+                mBtnCam.setEnabled(false);
             }
         });
 
@@ -169,13 +165,18 @@ public class CamDemoActivity extends Activity{
     @Override
     protected void onResume() {
         super.onResume();
-       mCameraManager.openCamera();
-       updatePicSizeSpinner();
+        mOrientationListener.enable();
+        mCameraManager.openCamera();
+        if(!mHasUpdatePicSizeList) {
+            updatePicSizeSpinner();
+            mHasUpdatePicSizeList = true;
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        mOrientationListener.disable();
         mCameraManager.stopCamera();
     }
 
@@ -186,9 +187,9 @@ public class CamDemoActivity extends Activity{
     }
 
     private void updateZoom() {
-        if(mCameraManager.isZoomSupport()){
+        if (mCameraManager.isZoomSupport()) {
             mSeekBar.setMax(mCameraManager.getMaxZoom());
-        }else{
+        } else {
             mSeekBar.setVisibility(View.GONE);
         }
     }
@@ -217,53 +218,19 @@ public class CamDemoActivity extends Activity{
         });
     }
 
-    private void setCameraDisplayOrientation(Activity activity,
-                                             int cameraId, Camera camera) {
-        Camera.CameraInfo info =
-                new Camera.CameraInfo();
-        Camera.getCameraInfo(cameraId, info);
-        int rotation = activity.getWindowManager().getDefaultDisplay()
-                .getRotation();
-        int degrees = 0;
-        switch (rotation) {
-            case Surface.ROTATION_0:
-                degrees = 0;
-                break;
-            case Surface.ROTATION_90:
-                degrees = 90;
-                break;
-            case Surface.ROTATION_180:
-                degrees = 180;
-                break;
-            case Surface.ROTATION_270:
-                degrees = 270;
-                break;
-        }
-
-        int result;
-        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            result = (info.orientation + degrees) % 360;
-            result = (360 - result) % 360;  // compensate the mirror
-        } else {  // back-facing
-            result = (info.orientation - degrees + 360) % 360;
-        }
-        camera.setDisplayOrientation(result);
-    }
-
-
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if(mCameraManager.isZoomSupport()) {
+        if (mCameraManager.isZoomSupport()) {
             switch (keyCode) {
                 case KeyEvent.KEYCODE_VOLUME_UP:
                     int zoom = mCameraManager.getCurrentZoom() + 1;
-                    if(zoom <= mCameraManager.getMaxZoom()){
+                    if (zoom <= mCameraManager.getMaxZoom()) {
                         mCameraManager.setZoom(zoom);
                     }
                     return true;
                 case KeyEvent.KEYCODE_VOLUME_DOWN:
                     int zoomDown = mCameraManager.getCurrentZoom() - 1;
-                    if(zoomDown >= 0){
+                    if (zoomDown >= 0) {
                         mCameraManager.setZoom(zoomDown);
                     }
                     return true;

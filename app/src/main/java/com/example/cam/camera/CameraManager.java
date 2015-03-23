@@ -2,16 +2,22 @@ package com.example.cam.camera;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.cam.R;
+import com.example.cam.listener.CameraOrientationListener;
 import com.example.cam.util.Util;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -31,7 +37,12 @@ public class CameraManager {
     private List<Camera.Size> mPreviewSizeList = null;
     private CameraSurfaceView mSurfaceView = null;
     private OnSaveImgDoneListener mSaveImgDoneListener = null;
-    public static interface OnSaveImgDoneListener{
+    private Camera.Size mPrePictureSize = null;
+    private CameraOrientationListener mOrientationListener = null;
+    private int mDisplayOrientation = 0;
+    private int mLayoutOrientation = 0;
+
+    public static interface OnSaveImgDoneListener {
         public void onDone(String imgPath);
     }
 
@@ -46,14 +57,19 @@ public class CameraManager {
         return sManager;
     }
 
-    public void setSaveImgDoneListener(OnSaveImgDoneListener listener){
+    public void setSaveImgDoneListener(OnSaveImgDoneListener listener) {
         this.mSaveImgDoneListener = listener;
     }
+
     public void setContext(Context ctx) {
         mContextWeakRef = new WeakReference<Context>(ctx);
     }
 
-    public void setSurfaceView(CameraSurfaceView view){
+    public void setOrientationListener(CameraOrientationListener listener) {
+        this.mOrientationListener = listener;
+    }
+
+    public void setSurfaceView(CameraSurfaceView view) {
         this.mSurfaceView = view;
     }
 
@@ -66,22 +82,24 @@ public class CameraManager {
             try {
                 if (mCurrentCameraId == -1) {
                     mCamera = Camera.open(0);
+                    mCurrentCameraId = 0;
                 } else {
                     mCamera = Camera.open(mCurrentCameraId);
                 }
                 initPicturePreviewSizeList();
-                setUpParamByPictureSize(null);
-            }catch(Exception e){
+                setUpParamByPictureSize(mPrePictureSize);
+            } catch (Exception e) {
                 e.printStackTrace();
                 Toast.makeText(mContextWeakRef.get(), mContextWeakRef.get().getString(R.string.camera_not_found), Toast.LENGTH_LONG).show();
             }
         }
     }
-    private void initPicturePreviewSizeList(){
+
+    private void initPicturePreviewSizeList() {
         mPictureSizeList = mCamera.getParameters().getSupportedPictureSizes();
         mPreviewSizeList = mCamera.getParameters().getSupportedPreviewSizes();
-        Collections.sort(mPictureSizeList,new CameraSizeComparator());
-        Collections.sort(mPreviewSizeList,new CameraSizeComparator());
+        Collections.sort(mPictureSizeList, new CameraSizeComparator());
+        Collections.sort(mPreviewSizeList, new CameraSizeComparator());
     }
 
     public void switchCamera() {
@@ -89,14 +107,15 @@ public class CameraManager {
     }
 
 
-    public void setUpParamByPictureSize(Camera.Size pictureSize){
+    public void setUpParamByPictureSize(Camera.Size pictureSize) {
+        mPrePictureSize = pictureSize;
         mCamera.stopPreview();
-        if(pictureSize == null){
+        if (pictureSize == null) {
             mCurrentPictureSize = mPictureSizeList.get(0);
-        }else{
+        } else {
             mCurrentPictureSize = pictureSize;
         }
-        mCamera.setDisplayOrientation(90);
+        setCameraDisplayOrientation();
         Camera.Parameters params = mCamera.getParameters();
         //set focus model
         List<String> focusModes = params.getSupportedFocusModes();
@@ -104,20 +123,55 @@ public class CameraManager {
             params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
         }
         //set picture size
-        params.setPictureSize(mCurrentPictureSize.width,mCurrentPictureSize.height);
+        params.setPictureSize(mCurrentPictureSize.width, mCurrentPictureSize.height);
         //set preview size
         Camera.Size optimalPreviewSize = getOptimalPreviewSize(mCurrentPictureSize);
-        params.setPreviewSize(optimalPreviewSize.width,optimalPreviewSize.height);
+        params.setPreviewSize(optimalPreviewSize.width, optimalPreviewSize.height);
         mCamera.setParameters(params);
         //update surface view layout
-        Activity ac = (Activity)mContextWeakRef.get();
+        Activity ac = (Activity) mContextWeakRef.get();
         DisplayMetrics metrics = new DisplayMetrics();
         ac.getWindowManager().getDefaultDisplay().getMetrics(metrics);
         //because our app is portrait
-        adjustSurfaceLayoutByPreviewSize(optimalPreviewSize,metrics.widthPixels,metrics.heightPixels);
+        adjustSurfaceLayoutByPreviewSize(optimalPreviewSize, metrics.widthPixels, metrics.heightPixels);
         mCamera.startPreview();
     }
-    private Camera.Size getOptimalPreviewSize(Camera.Size pictureSize){
+
+    private void setCameraDisplayOrientation() {
+        Camera.CameraInfo info =
+                new Camera.CameraInfo();
+        Camera.getCameraInfo(mCurrentCameraId, info);
+        Activity ac = (Activity) mContextWeakRef.get();
+        int rotation = ac.getWindowManager().getDefaultDisplay().getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (info.orientation - degrees + 360) % 360;
+        }
+        mDisplayOrientation = result;
+        mLayoutOrientation = degrees;
+        mCamera.setDisplayOrientation(result);
+    }
+
+    private Camera.Size getOptimalPreviewSize(Camera.Size pictureSize) {
         Camera.Size retSize = null;
         for (Camera.Size size : mPreviewSizeList) {
             if (size.equals(pictureSize)) {
@@ -139,7 +193,7 @@ public class CameraManager {
         return retSize;
     }
 
-    private void adjustSurfaceLayoutByPreviewSize(Camera.Size previewSize,int maxSurfaceWidth,int maxSurfaceHeight){
+    private void adjustSurfaceLayoutByPreviewSize(Camera.Size previewSize, int maxSurfaceWidth, int maxSurfaceHeight) {
         float tmpLayoutHeight = previewSize.width;
         float tmpLayoutWidth = previewSize.height;
 
@@ -161,21 +215,23 @@ public class CameraManager {
             mSurfaceView.setLayoutParams(layoutParams);
         }
     }
-    public void stopCamera(){
-        if(mCamera != null){
+
+    public void stopCamera() {
+        if (mCamera != null) {
             mCamera.stopPreview();
             mCamera.release();
             mCamera = null;
         }
     }
 
-    public void stopPreivew(){
-        if(mCamera != null){
+    public void stopPreview() {
+        if (mCamera != null) {
             mCamera.stopPreview();
         }
     }
-    public void setPreviewDisplay(SurfaceHolder holder){
-        if(mCamera != null){
+
+    public void setPreviewDisplay(SurfaceHolder holder) {
+        if (mCamera != null) {
             try {
                 mCamera.setPreviewDisplay(holder);
             } catch (IOException e) {
@@ -183,16 +239,18 @@ public class CameraManager {
             }
         }
     }
-    public List<Camera.Size> getPictureSizeList(){
+
+    public List<Camera.Size> getPictureSizeList() {
         return mPictureSizeList;
     }
 
-    public void takePicture(){
+    public void takePicture() {
+        mOrientationListener.rememberOrientation();
         mCamera.stopPreview();
         mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
     }
 
-    public boolean autoFocus(){
+    public boolean autoFocus() {
         if (Camera.Parameters.FOCUS_MODE_AUTO.equals(mCamera.getParameters().getFocusMode())) {
             mCamera.autoFocus(new Camera.AutoFocusCallback() {
                 @Override
@@ -207,20 +265,24 @@ public class CameraManager {
             return false;
         }
     }
-    public void setZoom(int zoom){
-        if(mCamera != null){
+
+    public void setZoom(int zoom) {
+        if (mCamera != null) {
             Camera.Parameters param = mCamera.getParameters();
             param.setZoom(zoom);
             mCamera.setParameters(param);
         }
     }
-    public int getCurrentZoom(){
+
+    public int getCurrentZoom() {
         return mCamera.getParameters().getZoom();
     }
-    public int getMaxZoom(){
+
+    public int getMaxZoom() {
         return mCamera.getParameters().getMaxZoom();
     }
-    public boolean isZoomSupport(){
+
+    public boolean isZoomSupport() {
         return mCamera.getParameters().isZoomSupported();
     }
 
@@ -250,6 +312,8 @@ public class CameraManager {
                 Toast.makeText(mContextWeakRef.get(), R.string.no_external_storage, Toast.LENGTH_LONG).show();
                 return null;
             }
+            Bitmap bitmap = getBitmap(data[0]);
+
             FileOutputStream outStream = null;
             // Write to SD Card
             try {
@@ -257,9 +321,9 @@ public class CameraManager {
                 String fileName = String.format("%d.jpg", System.currentTimeMillis());
                 File outFile = new File(dir, fileName);
                 outStream = new FileOutputStream(outFile);
-                outStream.write(data[0]);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
+//              outStream.write(data[0]);
                 Util.logD("onPictureTaken - wrote bytes: " + data.length + " to " + outFile.getAbsolutePath());
-                //refreshGallery(outFile);
                 return outFile.getAbsolutePath();
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -278,23 +342,51 @@ public class CameraManager {
             return null;
         }
 
+        private Bitmap getBitmap(byte[] data) {
+            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+
+            int rotation = (360 - (
+                    mDisplayOrientation
+                            + mOrientationListener.getRememberedOrientation()
+                            + mLayoutOrientation
+            )) % 360;
+
+            if (rotation != 0) {
+                Bitmap oldBitmap = bitmap;
+
+                Matrix matrix = new Matrix();
+                matrix.postRotate(rotation);
+
+                bitmap = Bitmap.createBitmap(
+                        bitmap,
+                        0,
+                        0,
+                        bitmap.getWidth(),
+                        bitmap.getHeight(),
+                        matrix,
+                        false
+                );
+                oldBitmap.recycle();
+            }
+            return bitmap;
+        }
+
         @Override
         protected void onPostExecute(String path) {
+            mCamera.startPreview();
             if (!TextUtils.isEmpty(path)) {
                 mSaveImgDoneListener.onDone(path);
             }
         }
     }
 
-    public  class CameraSizeComparator implements Comparator<Camera.Size> {
+    public class CameraSizeComparator implements Comparator<Camera.Size> {
         public int compare(Camera.Size lhs, Camera.Size rhs) {
-            if(lhs.width == rhs.width){
+            if (lhs.width == rhs.width) {
                 return 0;
-            }
-            else if(lhs.width < rhs.width){
+            } else if (lhs.width < rhs.width) {
                 return 1;
-            }
-            else{
+            } else {
                 return -1;
             }
         }

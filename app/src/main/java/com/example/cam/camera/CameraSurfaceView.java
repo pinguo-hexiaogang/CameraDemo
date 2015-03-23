@@ -1,15 +1,9 @@
 package com.example.cam.camera;
 
 import android.content.Context;
-import android.hardware.Camera;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-
-import com.example.cam.camera.CameraManager;
-
-import java.io.IOException;
 
 /**
  * Created by ws-zhangxiaoming on 15-3-20.
@@ -49,6 +43,6 @@ public class CameraSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-       mCameraManager.stopPreivew();
+       mCameraManager.stopPreview();
     }
 }

@@ -98,7 +98,6 @@ public class GridImageFragment extends Fragment {
             if (view == null) {
                 view = inflater.inflate(R.layout.item_grid_image, parent, false);
                 holder = new ViewHolder();
-                assert view != null;
                 holder.imageView = (ImageView) view.findViewById(R.id.image);
                 view.setTag(holder);
             } else {
