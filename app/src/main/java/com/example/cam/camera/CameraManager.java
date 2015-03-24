@@ -244,6 +244,41 @@ public class CameraManager {
         return mPictureSizeList;
     }
 
+    public List<String> getSupportWbList() {
+        return mCamera.getParameters().getSupportedWhiteBalance();
+    }
+
+    public String getWhiteBalance() {
+        return mCamera.getParameters().getWhiteBalance();
+    }
+
+    public void setWhiteBalance(String wb) {
+        Camera.Parameters param = mCamera.getParameters();
+        param.setWhiteBalance(wb);
+        mCamera.setParameters(param);
+    }
+
+    public int getCurrentExposure() {
+        int current =  mCamera.getParameters().getExposureCompensation();
+        return current;
+    }
+
+    public int getMaxExposure() {
+        int max = mCamera.getParameters().getMaxExposureCompensation();
+        return max;
+    }
+
+    public int getMinExposure() {
+        int min =  mCamera.getParameters().getMinExposureCompensation();
+        return min;
+    }
+
+    public void setExposure(int ev) {
+        Camera.Parameters param = mCamera.getParameters();
+        param.setExposureCompensation(ev);
+        mCamera.setParameters(param);
+    }
+
     public void takePicture() {
         mOrientationListener.rememberOrientation();
         mCamera.stopPreview();

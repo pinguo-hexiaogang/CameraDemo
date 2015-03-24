@@ -1,6 +1,7 @@
 package com.example.cam.ui;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import android.app.Activity;
@@ -21,6 +22,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.example.cam.R;
 import com.example.cam.camera.CameraManager;
@@ -46,6 +48,9 @@ public class CamDemoActivity extends Activity {
     private Handler mHandler;
     private CameraOrientationListener mOrientationListener = null;
     private boolean mHasUpdatePicSizeList = false;
+    private Spinner mWbSpinner = null;
+    private TextView mEvTv = null;
+    private SeekBar mEvSeekBar = null;
 
 
     @Override
@@ -64,6 +69,7 @@ public class CamDemoActivity extends Activity {
     }
 
     private void initViews() {
+        mWbSpinner = (Spinner) findViewById(R.id.wb_spinner);
         mThumbImv = (ImageView) findViewById(R.id.imv_thumb);
         mPicSizeSpinner = (Spinner) findViewById(R.id.spinner);
         mSeekBar = (SeekBar) findViewById(R.id.seekBar);
@@ -79,17 +85,61 @@ public class CamDemoActivity extends Activity {
         });
 
         mSurfaceView.setOnClickListener(new OnClickListener() {
-
             @Override
             public void onClick(View arg0) {
-                if (mCameraManager.isZoomSupport()) {
+                if(mSeekBar.getVisibility() == View.VISIBLE){
+                    mSeekBar.setVisibility(View.GONE);
+                }else if (mCameraManager.isZoomSupport()) {
                     mSeekBar.setVisibility(View.VISIBLE);
                 }
                 mHandler.removeCallbacks(mHideSeekBarRunnable);
                 mHandler.postDelayed(mHideSeekBarRunnable, SEEK_BAR_SHOW_TIME);
+                mEvSeekBar.setVisibility(View.GONE);
             }
         });
         setBtnCam();
+        initEV();
+    }
+
+    private void initEV() {
+        mEvSeekBar = (SeekBar) findViewById(R.id.ev_seek_bar);
+        mEvTv = (TextView) findViewById(R.id.ev_tv);
+        mEvTv.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mEvSeekBar.getVisibility() == View.VISIBLE) {
+                    mEvSeekBar.setVisibility(View.GONE);
+                } else {
+                    mEvSeekBar.setVisibility(View.VISIBLE);
+                    updateEvSeekBar();
+                }
+            }
+        });
+        mEvSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int ev = ((mCameraManager.getMaxExposure() - mCameraManager.getMinExposure()) * progress)/100 + mCameraManager.getMinExposure();
+                Util.logD("the exposure is:"+ev);
+                mCameraManager.setExposure(ev);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+
+    }
+
+    private void updateEvSeekBar() {
+        int currentProgress = (int)((mCameraManager.getCurrentExposure() - mCameraManager.getMinExposure()) * 100.0 / (mCameraManager.getMaxExposure() - mCameraManager.getMinExposure()));
+        mEvSeekBar.setProgress(currentProgress);
     }
 
     private Runnable mHideSeekBarRunnable = new Runnable() {
@@ -139,7 +189,6 @@ public class CamDemoActivity extends Activity {
     }
 
 
-
     private void setBtnCam() {
         mBtnCam = (Button) findViewById(R.id.btn_capture);
 
@@ -167,8 +216,9 @@ public class CamDemoActivity extends Activity {
         super.onResume();
         mOrientationListener.enable();
         mCameraManager.openCamera();
-        if(!mHasUpdatePicSizeList) {
+        if (!mHasUpdatePicSizeList) {
             updatePicSizeSpinner();
+            updateWbSpinner();
             mHasUpdatePicSizeList = true;
         }
     }
@@ -202,13 +252,34 @@ public class CamDemoActivity extends Activity {
             String s = size.width + "*" + size.height;
             sizeStrArray[i] = s;
         }
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, sizeStrArray);
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, R.layout.spinner_item_layout, sizeStrArray);
         mPicSizeSpinner.setAdapter(arrayAdapter);
         mPicSizeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 mCameraManager.setUpParamByPictureSize(mCameraManager.getPictureSizeList().get(position));
                 updateZoom();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+    }
+
+    private void updateWbSpinner() {
+        List<String> wbList = mCameraManager.getSupportWbList();
+        String currentWb = mCameraManager.getWhiteBalance();
+        int currentWbIndex = wbList.indexOf(currentWb);
+        final String[] wbArray = wbList.toArray(new String[0]);
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, R.layout.spinner_item_layout, wbArray);
+        mWbSpinner.setAdapter(arrayAdapter);
+        mWbSpinner.setSelection(currentWbIndex);
+        mWbSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                mCameraManager.setWhiteBalance(wbArray[position]);
             }
 
             @Override
