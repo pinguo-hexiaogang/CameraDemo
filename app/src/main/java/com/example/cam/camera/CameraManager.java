@@ -302,15 +302,13 @@ public class CameraManager {
                 @Override
                 public void onAutoFocus(boolean success, Camera arg1) {
                     if (success) {
-                        mOrientationListener.rememberOrientationCameraInfo();
-                        mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
+                        //mOrientationListener.rememberOrientationCameraInfo();
+                        //mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
                     }
                 }
             });
-            return true;
-        } else {
-            return false;
         }
+            return false;
     }
 
     public void setZoom(int zoom) {
