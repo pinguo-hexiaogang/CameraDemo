@@ -118,9 +118,11 @@ public class CamDemoActivity extends Activity {
         mEvSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                int ev = ((mCameraManager.getMaxExposure() - mCameraManager.getMinExposure()) * progress)/100 + mCameraManager.getMinExposure();
-                Util.logD("the exposure is:"+ev);
-                mCameraManager.setExposure(ev);
+                if(mCameraManager.hasInitDone()) {
+                    int ev = ((mCameraManager.getMaxExposure() - mCameraManager.getMinExposure()) * progress) / 100 + mCameraManager.getMinExposure();
+                    Util.logD("the exposure is:" + ev);
+                    mCameraManager.setExposure(ev);
+                }
             }
 
             @Override

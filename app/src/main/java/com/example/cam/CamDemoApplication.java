@@ -27,7 +27,7 @@ public class CamDemoApplication extends Application {
                 .build();
         ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(this)
                 .defaultDisplayImageOptions(options)
-                .writeDebugLogs()
+                //.writeDebugLogs()
                 .build();
         ImageLoader.getInstance().init(config);
     }

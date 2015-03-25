@@ -107,6 +107,17 @@ public class CameraManager {
     }
 
 
+    public boolean hasInitDone() {
+        return mCamera != null;
+    }
+
+    public Camera.CameraInfo getCameraInfo() {
+        Camera.CameraInfo info = new Camera.CameraInfo();
+        Camera.getCameraInfo(mCurrentCameraId, info);
+        return info;
+    }
+
+
     public void setUpParamByPictureSize(Camera.Size pictureSize) {
         mPrePictureSize = pictureSize;
         mCamera.stopPreview();
@@ -259,7 +270,7 @@ public class CameraManager {
     }
 
     public int getCurrentExposure() {
-        int current =  mCamera.getParameters().getExposureCompensation();
+        int current = mCamera.getParameters().getExposureCompensation();
         return current;
     }
 
@@ -269,7 +280,7 @@ public class CameraManager {
     }
 
     public int getMinExposure() {
-        int min =  mCamera.getParameters().getMinExposureCompensation();
+        int min = mCamera.getParameters().getMinExposureCompensation();
         return min;
     }
 
@@ -280,7 +291,7 @@ public class CameraManager {
     }
 
     public void takePicture() {
-        mOrientationListener.rememberOrientation();
+        mOrientationListener.rememberOrientationCameraInfo();
         mCamera.stopPreview();
         mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
     }
@@ -380,11 +391,21 @@ public class CameraManager {
         private Bitmap getBitmap(byte[] data) {
             Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
 
-            int rotation = (360 - (
-                    mDisplayOrientation
-                            + mOrientationListener.getRememberedOrientation()
-                            + mLayoutOrientation
-            )) % 360;
+            Camera.CameraInfo cameraInfo = mOrientationListener.getCameraInfo();
+            int rotation = 0;
+            if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                rotation = (360 - (
+                        mDisplayOrientation
+                                + mOrientationListener.getRememberedOrientation()
+                                + mLayoutOrientation
+                )) % 360;
+            } else {
+                rotation = (
+                        mDisplayOrientation
+                                + mOrientationListener.getRememberedOrientation()
+                                + mLayoutOrientation
+                ) % 360;
+            }
 
             if (rotation != 0) {
                 Bitmap oldBitmap = bitmap;
@@ -408,9 +429,11 @@ public class CameraManager {
 
         @Override
         protected void onPostExecute(String path) {
-            mCamera.startPreview();
-            if (!TextUtils.isEmpty(path)) {
-                mSaveImgDoneListener.onDone(path);
+            if(hasInitDone()) {
+                mCamera.startPreview();
+                if (!TextUtils.isEmpty(path)) {
+                    mSaveImgDoneListener.onDone(path);
+                }
             }
         }
     }
