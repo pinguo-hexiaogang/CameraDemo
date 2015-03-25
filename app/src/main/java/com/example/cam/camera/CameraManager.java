@@ -302,6 +302,7 @@ public class CameraManager {
                 @Override
                 public void onAutoFocus(boolean success, Camera arg1) {
                     if (success) {
+                        mOrientationListener.rememberOrientationCameraInfo();
                         mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
                     }
                 }
