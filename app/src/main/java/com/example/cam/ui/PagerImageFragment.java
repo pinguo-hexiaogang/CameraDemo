@@ -1,4 +1,3 @@
-
 package com.example.cam.ui;
 
 import android.graphics.Bitmap;
@@ -21,14 +20,14 @@ import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
 import java.util.ArrayList;
 
 public class PagerImageFragment extends Fragment {
-    private DisplayImageOptions options;
+    private DisplayImageOptions mOptions;
     private ArrayList<String> mImageList = null;
     private int mCurrentPosition;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        options = new DisplayImageOptions.Builder()
+        mOptions = new DisplayImageOptions.Builder()
                 .resetViewBeforeLoading(true)
                 .cacheOnDisk(true)
                 .imageScaleType(ImageScaleType.EXACTLY)
@@ -57,10 +56,10 @@ public class PagerImageFragment extends Fragment {
 
     private class ImageAdapter extends PagerAdapter {
 
-        private LayoutInflater inflater;
+        private LayoutInflater mInflater;
 
         ImageAdapter() {
-            inflater = LayoutInflater.from(getActivity());
+            mInflater = LayoutInflater.from(getActivity());
         }
 
         @Override
@@ -75,10 +74,10 @@ public class PagerImageFragment extends Fragment {
 
         @Override
         public Object instantiateItem(ViewGroup view, int position) {
-            View imageLayout = inflater.inflate(R.layout.item_pager_image, view, false);
+            View imageLayout = mInflater.inflate(R.layout.item_pager_image, view, false);
             assert imageLayout != null;
             ImageView imageView = (ImageView) imageLayout.findViewById(R.id.image);
-            ImageLoader.getInstance().displayImage("file://" + mImageList.get(position), imageView,options);
+            ImageLoader.getInstance().displayImage("file://" + mImageList.get(position), imageView, mOptions);
             view.addView(imageLayout, 0);
             return imageLayout;
         }

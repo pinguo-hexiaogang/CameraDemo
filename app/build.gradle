@@ -1,12 +1,19 @@
 apply plugin: 'com.android.application'
+apply plugin: 'android-cq'
 android {
-    compileSdkVersion 19
+    compileSdkVersion 21
     buildToolsVersion "21.1.2"
 
     defaultConfig {
         applicationId "com.example.cam"
         minSdkVersion 9
         targetSdkVersion 9
+        versionCode 1
+        versionName "1.0"
+    }
+
+    lintOptions {
+        abortOnError false
     }
 
     buildTypes {

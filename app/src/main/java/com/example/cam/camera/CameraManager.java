@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+@SuppressWarnings("deprecation")
 public class CameraManager {
     private static CameraManager sManager = null;
     private WeakReference<Context> mContextWeakRef = null;
@@ -270,8 +271,7 @@ public class CameraManager {
     }
 
     public int getCurrentExposure() {
-        int current = mCamera.getParameters().getExposureCompensation();
-        return current;
+        return mCamera.getParameters().getExposureCompensation();
     }
 
     public int getMaxExposure() {
@@ -293,7 +293,7 @@ public class CameraManager {
     public void takePicture() {
         mOrientationListener.rememberOrientationCameraInfo();
         mCamera.stopPreview();
-        mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
+        mCamera.takePicture(mShutterCallback, mRawCallback, mJpegCallback);
     }
 
     public boolean autoFocus() {
@@ -301,10 +301,6 @@ public class CameraManager {
             mCamera.autoFocus(new Camera.AutoFocusCallback() {
                 @Override
                 public void onAutoFocus(boolean success, Camera arg1) {
-                    if (success) {
-                        //mOrientationListener.rememberOrientationCameraInfo();
-                        //mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
-                    }
                 }
             });
         }
@@ -331,17 +327,17 @@ public class CameraManager {
         return mCamera.getParameters().isZoomSupported();
     }
 
-    Camera.ShutterCallback shutterCallback = new Camera.ShutterCallback() {
+    Camera.ShutterCallback mShutterCallback = new Camera.ShutterCallback() {
         public void onShutter() {
         }
     };
 
-    Camera.PictureCallback rawCallback = new Camera.PictureCallback() {
+    Camera.PictureCallback mRawCallback = new Camera.PictureCallback() {
         public void onPictureTaken(byte[] data, Camera camera) {
         }
     };
 
-    Camera.PictureCallback jpegCallback = new Camera.PictureCallback() {
+    Camera.PictureCallback mJpegCallback = new Camera.PictureCallback() {
         public void onPictureTaken(byte[] data, Camera camera) {
             new SaveImageTask().execute(data);
             mCamera.startPreview();
@@ -371,8 +367,6 @@ public class CameraManager {
                 Util.logD("onPictureTaken - wrote bytes: " + data.length + " to " + outFile.getAbsolutePath());
                 return outFile.getAbsolutePath();
             } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
                 e.printStackTrace();
             } finally {
                 if (outStream != null) {

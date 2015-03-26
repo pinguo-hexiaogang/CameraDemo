@@ -6,7 +6,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 /**
- * Created by ws-zhangxiaoming on 15-3-20.
+ * Created by hexiaogang on 15-3-20.
  */
 public class CameraSurfaceView extends SurfaceView implements SurfaceHolder.Callback{
     private CameraManager mCameraManager = null;
@@ -29,7 +29,8 @@ public class CameraSurfaceView extends SurfaceView implements SurfaceHolder.Call
        mCameraManager = CameraManager.getInstance();
        getHolder().addCallback(this);
        setKeepScreenOn(true);
-       getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        //noinspection deprecation
+        getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
 
     @Override

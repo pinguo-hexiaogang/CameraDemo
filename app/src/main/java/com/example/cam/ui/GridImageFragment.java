@@ -21,7 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 public class GridImageFragment extends Fragment {
-    DisplayImageOptions options;
+    DisplayImageOptions mOptions;
     GridView mGridView = null;
     private String mImagesPath = null;
     private ArrayList<String> mImagesList = new ArrayList<String>();
@@ -33,7 +33,7 @@ public class GridImageFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        options = new DisplayImageOptions.Builder()
+        mOptions = new DisplayImageOptions.Builder()
                 .cacheInMemory(true)
                 .cacheOnDisk(true)
                 .considerExifParams(true)
@@ -70,10 +70,10 @@ public class GridImageFragment extends Fragment {
 
     public class ImageAdapter extends BaseAdapter {
 
-        private LayoutInflater inflater;
+        private LayoutInflater mInflater;
 
         ImageAdapter() {
-            inflater = LayoutInflater.from(getActivity());
+            mInflater = LayoutInflater.from(getActivity());
         }
 
         @Override
@@ -96,18 +96,19 @@ public class GridImageFragment extends Fragment {
             final ViewHolder holder;
             View view = convertView;
             if (view == null) {
-                view = inflater.inflate(R.layout.item_grid_image, parent, false);
+                view = mInflater.inflate(R.layout.item_grid_image, parent, false);
                 holder = new ViewHolder();
                 holder.imageView = (ImageView) view.findViewById(R.id.image);
                 view.setTag(holder);
             } else {
                 holder = (ViewHolder) view.getTag();
             }
-            ImageLoader.getInstance().displayImage("file://" + mImagesList.get(position),holder.imageView, options);
+            ImageLoader.getInstance().displayImage("file://" + mImagesList.get(position),holder.imageView, mOptions);
             return view;
         }
     }
 
+    @SuppressWarnings("checkstyle:membername")
     static class ViewHolder {
         ImageView imageView;
         ProgressBar progressBar;

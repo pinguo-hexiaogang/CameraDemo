@@ -10,8 +10,8 @@ import com.example.cam.util.Util;
 
 
 public class CameraOrientationListener extends OrientationEventListener {
-    private int currentNormalizedOrientation;
-    private int rememberedNormalizedOrientation;
+    private int mCurrentNormalizedOrientation;
+    private int mRememberedNormalizedOrientation;
     private Camera.CameraInfo mCameraInfo = null;
 
     public CameraOrientationListener(Context context) {
@@ -21,7 +21,7 @@ public class CameraOrientationListener extends OrientationEventListener {
     @Override
     public void onOrientationChanged(int orientation) {
         if (orientation != ORIENTATION_UNKNOWN) {
-            currentNormalizedOrientation = normalize(orientation);
+            mCurrentNormalizedOrientation = normalize(orientation);
         }
     }
 
@@ -46,13 +46,13 @@ public class CameraOrientationListener extends OrientationEventListener {
     }
 
     public void rememberOrientationCameraInfo() {
-        rememberedNormalizedOrientation = currentNormalizedOrientation;
+        mRememberedNormalizedOrientation = mCurrentNormalizedOrientation;
         mCameraInfo = CameraManager.getInstance().getCameraInfo();
-        Util.logD("rememberedNormalizedOrientation:"+rememberedNormalizedOrientation);
+        Util.logD("mRememberedNormalizedOrientation:"+ mRememberedNormalizedOrientation);
     }
 
     public int getRememberedOrientation() {
-        return rememberedNormalizedOrientation;
+        return mRememberedNormalizedOrientation;
     }
     public Camera.CameraInfo getCameraInfo(){
         return mCameraInfo;

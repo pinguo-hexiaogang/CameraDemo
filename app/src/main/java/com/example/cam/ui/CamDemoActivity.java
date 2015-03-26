@@ -1,19 +1,13 @@
 package com.example.cam.ui;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.view.KeyEvent;
-import android.view.Surface;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -29,9 +23,10 @@ import com.example.cam.camera.CameraManager;
 import com.example.cam.camera.CameraSurfaceView;
 import com.example.cam.listener.CameraOrientationListener;
 import com.example.cam.util.Util;
-import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+
+import java.io.File;
+import java.util.List;
 
 public class CamDemoActivity extends Activity {
     public static final String IMAGE_PATH_EXTRA_KEY = "image_path";
@@ -49,7 +44,6 @@ public class CamDemoActivity extends Activity {
     private CameraOrientationListener mOrientationListener = null;
     private boolean mHasUpdatePicSizeList = false;
     private Spinner mWbSpinner = null;
-    private TextView mEvTv = null;
     private SeekBar mEvSeekBar = null;
 
 
@@ -103,7 +97,7 @@ public class CamDemoActivity extends Activity {
 
     private void initEV() {
         mEvSeekBar = (SeekBar) findViewById(R.id.ev_seek_bar);
-        mEvTv = (TextView) findViewById(R.id.ev_tv);
+        TextView mEvTv = (TextView) findViewById(R.id.ev_tv);
         mEvTv.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
