@@ -5,7 +5,7 @@ import android.util.AttributeSet;
 import android.widget.FrameLayout;
 
 /**
- * Created by ws-zhangxiaoming on 15-3-23.
+ * Square layout whose width is equal to height
  */
 public class SquareFrameLayout extends FrameLayout{
 
@@ -23,6 +23,7 @@ public class SquareFrameLayout extends FrameLayout{
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        //both pass widthMeasureSpec
         super.onMeasure(widthMeasureSpec, widthMeasureSpec);
     }
 }

@@ -123,6 +123,7 @@ public class CameraManager {
         mPrePictureSize = pictureSize;
         mCamera.stopPreview();
         if (pictureSize == null) {
+            //choose the max picture size by default
             mCurrentPictureSize = mPictureSizeList.get(0);
         } else {
             mCurrentPictureSize = pictureSize;
@@ -144,7 +145,6 @@ public class CameraManager {
         Activity ac = (Activity) mContextWeakRef.get();
         DisplayMetrics metrics = new DisplayMetrics();
         ac.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        //because our app is portrait
         adjustSurfaceLayoutByPreviewSize(optimalPreviewSize, metrics.widthPixels, metrics.heightPixels);
         mCamera.startPreview();
     }
@@ -183,6 +183,13 @@ public class CameraManager {
         mCamera.setDisplayOrientation(result);
     }
 
+    /**
+     * choose the most optimal preview size by the picture size.
+     * if the preview size's ration is most near to the picture size's ration,then
+     * this preview size is the best.
+     * @param pictureSize
+     * @return
+     */
     private Camera.Size getOptimalPreviewSize(Camera.Size pictureSize) {
         Camera.Size retSize = null;
         for (Camera.Size size : mPreviewSizeList) {
@@ -206,12 +213,14 @@ public class CameraManager {
     }
 
     private void adjustSurfaceLayoutByPreviewSize(Camera.Size previewSize, int maxSurfaceWidth, int maxSurfaceHeight) {
+        //because our app's orientation is portrait
         float tmpLayoutHeight = previewSize.width;
         float tmpLayoutWidth = previewSize.height;
 
         float ratioH, ratioW, ratio;
         ratioH = maxSurfaceHeight / tmpLayoutHeight;
         ratioW = maxSurfaceWidth / tmpLayoutWidth;
+        //choose the min ration so that it will not exceed the screen.
         if (ratioH < ratioW) {
             ratio = ratioH;
         } else {

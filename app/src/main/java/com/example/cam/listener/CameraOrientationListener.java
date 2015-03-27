@@ -45,6 +45,10 @@ public class CameraOrientationListener extends OrientationEventListener {
         throw new RuntimeException("The physics as we know them are no more. Watch out for anomalies.");
     }
 
+    /**
+     * remember the orientation and the CameraInfo(face-back of face-front) in the moment that we take the picture.
+     * These two param will be used to rotate the pic when save the picture.
+     */
     public void rememberOrientationCameraInfo() {
         mRememberedNormalizedOrientation = mCurrentNormalizedOrientation;
         mCameraInfo = CameraManager.getInstance().getCameraInfo();
